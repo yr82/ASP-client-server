@@ -24,19 +24,19 @@ def server_mode(args):
     asyncio.run(quic_engine.run_server(listen_address, listen_port, server_config))
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Echo example')
+    parser = argparse.ArgumentParser(description='Audio Streaming Protocol')
     subparsers = parser.add_subparsers(dest='mode', help='Mode to run the application in', required=True)
     
     client_parser = subparsers.add_parser('client')
     client_parser.add_argument('-s','--server', default='localhost', help='Host to connect to')   
-    client_parser.add_argument('-p','--port', type=int, default=4433, help='Port to connect to')
+    client_parser.add_argument('-p','--port', type=int, default=4040, help='Port to connect to')
     client_parser.add_argument('-c','--cert-file', default='./certs/quic_certificate.pem', help='Certificate file (for self signed certs)')
 
     server_parser = subparsers.add_parser('server')
     server_parser.add_argument('-c','--cert-file', default='./certs/quic_certificate.pem', help='Certificate file (for self signed certs)')
     server_parser.add_argument('-k','--key-file', default='./certs/quic_private_key.pem', help='Key file (for self signed certs)')
     server_parser.add_argument('-l','--listen', default='localhost', help='Address to listen on')
-    server_parser.add_argument('-p','--port', type=int, default=4433, help='Port to listen on')
+    server_parser.add_argument('-p','--port', type=int, default=4040, help='Port to listen on')
        
     return parser.parse_args()
 
