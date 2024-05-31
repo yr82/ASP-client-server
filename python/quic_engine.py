@@ -10,10 +10,10 @@ from collections import deque
 
 import json
 
-from echo_quic import EchoQuicConnection, QuicStreamEvent
-import echo_server, echo_client
+from asp_quic import ASPQuicConnection, QuicStreamEvent
+import asp_server, asp_client
 
-ALPN_PROTOCOL = "echo-protocol"
+ALPN_PROTOCOL = "asp-protocol"
 
 def build_server_quic_config(cert_file, key_file) -> QuicConfiguration:
     configuration = QuicConfiguration(
@@ -41,8 +41,8 @@ CLIENT_MODE = 1
 class AsyncQuicServer(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._handlers: Dict[int, EchoServerRequestHandler] = {}
-        self._client_handler: Optional[EchoClientRequestHandler] = None
+        self._handlers: Dict[int, ASPServerRequestHandler] = {}
+        self._client_handler: Optional[ASPClientRequestHandler] = None
         self._is_client: bool = self._quic.configuration.is_client
         self._mode: int = SERVER_MODE if not self._is_client else CLIENT_MODE
         if self._mode == CLIENT_MODE:
@@ -50,7 +50,7 @@ class AsyncQuicServer(QuicConnectionProtocol):
         
     def _attach_client_handler(self): 
         if self._mode == CLIENT_MODE:
-            self._client_handler = EchoClientRequestHandler(
+            self._client_handler = ASPClientRequestHandler(
                        authority=self._quic.configuration.server_name,
                         connection=self._quic,
                         protocol=self,
@@ -71,7 +71,7 @@ class AsyncQuicServer(QuicConnectionProtocol):
         handler = None
         if isinstance(event, StreamDataReceived):
             if event.stream_id not in self._handlers:
-                 handler = EchoServerRequestHandler(
+                 handler = ASPServerRequestHandler(
                         authority=self._quic.configuration.server_name,
                         connection=self._quic,
                         protocol=self,
@@ -82,7 +82,7 @@ class AsyncQuicServer(QuicConnectionProtocol):
                  )
                  self._handlers[event.stream_id] = handler
                  handler.quic_event_received(event)
-                 asyncio.ensure_future(handler.launch_echo())
+                 asyncio.ensure_future(handler.launch_asp())
             else:
                 handler = self._handlers[event.stream_id]
                 handler.quic_event_received(event)
@@ -123,10 +123,10 @@ async def run_server(server, server_port, configuration):
 async def run_client(server, server_port, configuration):    
     async with connect(server, server_port, configuration=configuration, 
             create_protocol=AsyncQuicServer) as client:
-        await asyncio.ensure_future(client._client_handler.launch_echo())
+        await asyncio.ensure_future(client._client_handler.launch_asp())
 
         
-class EchoServerRequestHandler:
+class ASPServerRequestHandler:
     def __init__(
         self,
         *,
@@ -171,23 +171,23 @@ class EchoServerRequestHandler:
         self.protocol.remove_handler(self.stream_id)
         self.connection.close()
         
-    async def launch_echo(self):
-        qc = EchoQuicConnection(self.send, 
+    async def launch_asp(self):
+        qc = ASPQuicConnection(self.send, 
                 self.receive, self.close, None)
-        await echo_server.echo_server_proto(self.scope, 
+        await asp_server.asp_server_proto(self.scope, 
             qc)
         
         
-class EchoClientRequestHandler(EchoServerRequestHandler):
+class ASPClientRequestHandler(ASPServerRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
     def get_next_stream_id(self) -> int:
         return self.connection.get_next_available_stream_id()
     
-    async def launch_echo(self):
-        qc = EchoQuicConnection(self.send, 
+    async def launch_asp(self):
+        qc = ASPQuicConnection(self.send, 
                 self.receive, self.close, 
                 self.get_next_stream_id)
-        await echo_client.echo_client_proto(self.scope, 
+        await asp_client.asp_client_proto(self.scope, 
             qc)
