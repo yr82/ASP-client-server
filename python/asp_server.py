@@ -11,19 +11,19 @@ import random
 
 async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
         
-        message:QuicStreamEvent = await conn.receive()
+        # message:QuicStreamEvent = await conn.receive()
         
-        dgram_in = pdu.Datagram.from_bytes(message.data)
-        print("[svr] received message: ", dgram_in.msg)
+        # dgram_in = pdu.Datagram.from_bytes(message.data)
+        # print("[svr] received message: ", dgram_in.msg)
         
-        stream_id = message.stream_id
+        # stream_id = message.stream_id
         
-        dgram_out = dgram_in
-        dgram_out.mtype |= pdu.MSG_TYPE_DATA_ACK
-        dgram_out.msg = "SVR-ACK: " + dgram_out.msg
-        rsp_msg = dgram_out.to_bytes()
-        rsp_vent = QuicStreamEvent(stream_id, rsp_msg, False)
-        await conn.send(rsp_vent)
+        # dgram_out = dgram_in
+        # dgram_out.mtype |= pdu.MSG_TYPE_DATA_ACK
+        # dgram_out.msg = "SVR-ACK: " + dgram_out.msg
+        # rsp_msg = dgram_out.to_bytes()
+        # rsp_vent = QuicStreamEvent(stream_id, rsp_msg, False)
+        # await conn.send(rsp_vent)
 
         # Create an array of data that needs to be streamed 
         data_stream = ["Hello", "this", "is", "a", "test", "stream"]
@@ -51,7 +51,7 @@ async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
             else:
                 # Use the existing stream
                 rsp_event = QuicStreamEvent(stream_id, rsp_msg, False)
-                await conn.send(rsp_vent)
+                await conn.send(rsp_event)
 
 
         # Wait for the final acknowledgment message from the client
