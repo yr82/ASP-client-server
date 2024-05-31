@@ -1,9 +1,9 @@
 import argparse
 import asyncio
 from aioquic.quic.configuration import QuicConfiguration
-import echo_client
+import asp_client
 import quic_engine
-import echo_server
+import asp_server
 
 def client_mode(args):
     server_address = args.server
