@@ -34,6 +34,8 @@ async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
         # Iterate through the data that needs to be streamed
 
         for i in range(len(data_stream)):
+
+            print(f"[svr] sent message {i}:", data_stream[i])
             
             # Create a pdu for each the current message
             if i != (len(data_stream) - 1):
@@ -53,6 +55,7 @@ async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
                 rsp_event = QuicStreamEvent(stream_id, rsp_msg, False)
                 await conn.send(rsp_event)
 
+        print(f"[svr] is done sending all messages")
 
         # Wait for the final acknowledgment message from the client
         final_msg: QuicStreamEvent = await conn.receive()
