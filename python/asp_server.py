@@ -48,8 +48,9 @@ async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
 
             if stream_id is None:
                 # Open a new stream
-                rsp_event = await conn.new_stream(rsp_msg)
-                stream_id = rsp_event.stream_id
+                stream_id = conn.new_stream()
+                rsp_event = QuicStreamEvent(stream_id, rsp_msg, False)
+                await conn.send(rsp_event)
             else:
                 # Use the existing stream
                 rsp_event = QuicStreamEvent(stream_id, rsp_msg, False)
