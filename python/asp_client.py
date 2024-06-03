@@ -6,11 +6,15 @@ from asp_quic import ASPQuicConnection, QuicStreamEvent
 import pdu
 import random
 
+
+# Simulate chunks of data in a stream using strings of random length
 def generate_random_string(length):
     return ''.join(random.choice(string.ascii_letters) for _ in range(length))
 
-def generate_random_string_array():
-    return [generate_random_string(random.randint(5, 10)) for _ in range(random.randint(5, 10))]
+def generate_random_string_array(chunk_len):
+    return [generate_random_string(chunk_len) for _ in range(random.randint(20, 30))]
+
+chunk_size = random.randint(5, 10)
 
 
 async def asp_client_proto(scope:Dict, conn:ASPQuicConnection):
@@ -49,7 +53,7 @@ async def asp_client_proto(scope:Dict, conn:ASPQuicConnection):
 
     # Create an array of data that needs to be streamed 
     # data_stream = ["Hello", "this", "is", "a", "test", "stream"]
-    data_stream = generate_random_string_array()
+    data_stream = generate_random_string_array(chunk_size)
    
     # Initialize stream id 
     stream_id = None

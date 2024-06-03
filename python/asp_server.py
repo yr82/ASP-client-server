@@ -60,12 +60,13 @@ async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
         msgs_received = []
         msgs_streamed = []
 
-        # Intialize timer
+        # Initialize timer
         i = 0
 
         # Simulate the time in the client
         while True:
             print('[cli] The current time at the client is: ', i)
+            
 
             # Receive a message from the server
             message:QuicStreamEvent = await conn.receive()
@@ -73,25 +74,41 @@ async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
 
              # If it is not the end of the stream
             if not dgram_resp.is_done:
-                if dgram_resp.seq_num <= i or i >= len(msgs_streamed[-1]) + i:
+                if msgs_streamed == []:
+                    # We are streaming the first message
+                    print(f'[cli] got message {dgram_resp.seq_num}:' , dgram_resp.msg)
+                    msgs_received.append(dgram_resp)
+                    msgs_streamed.append(dgram_resp)
+                    
+
+                if msgs_streamed[-1].end < i and i <= dgram_resp.start:
                     # We are caught up and receiving data on time
                     print(f'[cli] got message {dgram_resp.seq_num}:' , dgram_resp.msg)
-                    msgs_received.append(dgram_resp.msg)
-                    msgs_streamed.append(dgram_resp.msg)
-                    i += 1
+                    msgs_received.append(dgram_resp)
+                    msgs_streamed.append(dgram_resp)
+                    
+
                 else:
                     # We are running behind - do not do anything and drop the packets
-                    msgs_received.append(dgram_resp.msg)
+                    msgs_received.append(dgram_resp)
+                    
                      
             else:
-                print(f'[cli] got message {dgram_resp.seq_num}:' , dgram_resp.msg)
-                print("Stream Ended")
+                if msgs_streamed[-1].end < i and i <= dgram_resp.start:
+                    # The previous message is still being streamed for whatever reason
+                    print("Stream Ended")
+                else:   
+                    print(f'[cli] got message {dgram_resp.seq_num}:' , dgram_resp.msg)
+                    print("Stream Ended")
+
 
                 # Send final ack to the server
                 datagram = pdu.Datagram(pdu.MSG_TYPE_DATA_ACK, "Final client ack")
                 new_stream_id = conn.new_stream()
                 qs = QuicStreamEvent(new_stream_id, datagram.to_bytes(), False)
                 await conn.send(qs)
+
+            i += 1
 
 
         #END CLIENT HERE
