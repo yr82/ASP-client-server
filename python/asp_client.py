@@ -15,7 +15,7 @@ def generate_random_string_array(chunk_len):
     return [generate_random_string(chunk_len) for _ in range(random.randint(20, 30))]
 
 # chunk_size = random.randint(5, 10)
-chunk_size = 5 # Streaming protocols usually have fixed chunk size
+chunk_size = 5 # Streaming protocols usually have fixed chunk size 
 
 
 async def asp_client_proto(scope:Dict, conn:ASPQuicConnection):
@@ -91,8 +91,7 @@ async def asp_client_proto(scope:Dict, conn:ASPQuicConnection):
     final_dgram_in = pdu.Datagram.from_bytes(final_msg.data)
     print("[svr] received final ack: ", final_dgram_in.msg)
 
-    # Close the stream
-    conn.close()
+    
 
 
         

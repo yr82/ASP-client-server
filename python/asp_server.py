@@ -76,11 +76,16 @@ async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
                         msgs_streamed.append(msg)
                         msgs_received.remove(msg)
                         break
-                
+                elif msg.start < i:
+                     # Its too late to stream this message, we need to drop it
+                     msgs_received.remove(msg)
+            
+
             # If we are still expecting messages
             if not is_done:
                 # Receive a message from the server
                 message:QuicStreamEvent = await conn.receive()
+                
                 dgram_resp = pdu.Datagram.from_bytes(message.data)
 
                 # If it is not the end of the stream
@@ -109,9 +114,16 @@ async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
 
                 # Send final ack to the server
                 datagram = pdu.Datagram(pdu.MSG_TYPE_DATA_ACK, "Final client ack")
-                new_stream_id = conn.new_stream()
-                qs = QuicStreamEvent(new_stream_id, datagram.to_bytes(), False)
+                #new_stream_id = conn.new_stream()
+                # Use the same stream id 
+                qs = QuicStreamEvent(message.stream_id, datagram.to_bytes(), False)
                 await conn.send(qs)
+
+                # Close the stream
+                conn.close()
+
+                # Exit while loop
+                break
 
             # Increment time
             i += 1
