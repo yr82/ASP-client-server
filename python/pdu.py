@@ -26,5 +26,5 @@ class Datagram:
         return json.dumps(self.__dict__).encode('utf-8')
     
     @staticmethod
-    def from_bytes(json_bytes):
+    def from_bytes(json_bytes): 
         return Datagram(**json.loads(json_bytes.decode('utf-8')))    
