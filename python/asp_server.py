@@ -11,57 +11,90 @@ import random
 
 async def asp_server_proto(scope:Dict, conn:ASPQuicConnection):
         
-        # message:QuicStreamEvent = await conn.receive()
-        
-        # dgram_in = pdu.Datagram.from_bytes(message.data)
-        # print("[svr] received message: ", dgram_in.msg)
-        
-        # stream_id = message.stream_id
-        
-        # dgram_out = dgram_in
-        # dgram_out.mtype |= pdu.MSG_TYPE_DATA_ACK
-        # dgram_out.msg = "SVR-ACK: " + dgram_out.msg
-        # rsp_msg = dgram_out.to_bytes()
-        # rsp_vent = QuicStreamEvent(stream_id, rsp_msg, False)
-        # await conn.send(rsp_vent)
+        # # Create an array of data that needs to be streamed 
+        # data_stream = ["Hello", "this", "is", "a", "test", "stream"]
 
-        # Create an array of data that needs to be streamed 
-        data_stream = ["Hello", "this", "is", "a", "test", "stream"]
+        # print("data stream created")
 
-        # Initialize stream id 
-        stream_id = None
+        # # Initialize stream id 
+        # stream_id = None
 
-        # Iterate through the data that needs to be streamed
+        # # Iterate through the data that needs to be streamed
 
-        for i in range(len(data_stream)):
+        # for i in range(len(data_stream)):
 
-            print(f"[svr] sent message {i}:", data_stream[i])
+        #     print(f"[svr] sent message {i}:", data_stream[i])
             
-            # Create a pdu for each the current message
-            if i != (len(data_stream) - 1):
-                dgram_out = pdu.Datagram(pdu.MSG_TYPE_DATA, data_stream[i], i, False)
+        #     # Create a pdu for each the current message
+        #     if i != (len(data_stream) - 1):
+        #         dgram_out = pdu.Datagram(pdu.MSG_TYPE_DATA, data_stream[i], i, False)
+        #     else:
+        #         dgram_out = pdu.Datagram(pdu.MSG_TYPE_DATA, data_stream[i], i, True)
+
+        #     # Convert the pdu into bytes to be streamed
+        #     rsp_msg = dgram_out.to_bytes()
+
+        #     if stream_id is None:
+        #         # Open a new stream
+        #         stream_id = conn.new_stream()
+        #         rsp_event = QuicStreamEvent(stream_id, rsp_msg, False)
+        #         await conn.send(rsp_event)
+        #     else:
+        #         # Use the existing stream
+        #         rsp_event = QuicStreamEvent(stream_id, rsp_msg, False)
+        #         await conn.send(rsp_event)
+
+        # print(f"[svr] is done sending all messages")
+
+        # # Wait for the final acknowledgment message from the client
+        # final_msg: QuicStreamEvent = await conn.receive()
+        # final_dgram_in = pdu.Datagram.from_bytes(final_msg.data)
+        # print("[svr] received final ack: ", final_dgram_in.msg)
+
+
+        # #START CLIENT HERE
+        print('[cli] starting client')
+
+
+        # Store the messages received and streamed in a buffer 
+        msgs_received = []
+        msgs_streamed = []
+
+        # Intialize timer
+        i = 0
+
+        # Simulate the time in the client
+        while True:
+            print('[cli] The current time at the client is: ', i)
+
+            # Receive a message from the server
+            message:QuicStreamEvent = await conn.receive()
+            dgram_resp = pdu.Datagram.from_bytes(message.data)
+
+             # If it is not the end of the stream
+            if not dgram_resp.is_done:
+                if dgram_resp.seq_num <= i or i >= len(msgs_streamed[-1]) + i:
+                    # We are caught up and receiving data on time
+                    print(f'[cli] got message {dgram_resp.seq_num}:' , dgram_resp.msg)
+                    msgs_received.append(dgram_resp.msg)
+                    msgs_streamed.append(dgram_resp.msg)
+                    i += 1
+                else:
+                    # We are running behind - do not do anything and drop the packets
+                    msgs_received.append(dgram_resp.msg)
+                     
             else:
-                dgram_out = pdu.Datagram(pdu.MSG_TYPE_DATA, data_stream[i], i, True)
+                print(f'[cli] got message {dgram_resp.seq_num}:' , dgram_resp.msg)
+                print("Stream Ended")
 
-            # Convert the pdu into bytes to be streamed
-            rsp_msg = dgram_out.to_bytes()
+                # Send final ack to the server
+                datagram = pdu.Datagram(pdu.MSG_TYPE_DATA_ACK, "Final client ack")
+                new_stream_id = conn.new_stream()
+                qs = QuicStreamEvent(new_stream_id, datagram.to_bytes(), False)
+                await conn.send(qs)
 
-            if stream_id is None:
-                # Open a new stream
-                stream_id = conn.new_stream()
-                rsp_event = QuicStreamEvent(stream_id, rsp_msg, False)
-                await conn.send(rsp_event)
-            else:
-                # Use the existing stream
-                rsp_event = QuicStreamEvent(stream_id, rsp_msg, False)
-                await conn.send(rsp_event)
 
-        print(f"[svr] is done sending all messages")
-
-        # Wait for the final acknowledgment message from the client
-        final_msg: QuicStreamEvent = await conn.receive()
-        final_dgram_in = pdu.Datagram.from_bytes(final_msg.data)
-        print("[svr] received final ack: ", final_dgram_in.msg)
+        #END CLIENT HERE
 
 
 
